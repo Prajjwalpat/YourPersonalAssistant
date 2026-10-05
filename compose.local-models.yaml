@@ -1,0 +1,10 @@
+# Reuse this project's previously downloaded GGUF models instead of downloading
+# another copy into the Docker volume. Requires an existing .ollama/models folder.
+services:
+  ollama:
+    volumes:
+      - type: bind
+        source: ./.ollama/models
+        target: /root/.ollama/models
+        bind:
+          create_host_path: false

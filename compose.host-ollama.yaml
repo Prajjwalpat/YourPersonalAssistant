@@ -1,0 +1,35 @@
+# Standalone alternative: containerize the app, reuse Ollama on the host.
+# Docker Desktop provides host.docker.internal; host-gateway supports Linux.
+x-chatdoc-image: &chatdoc-image
+  image: chatdoc:local
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-host-environment: &host-environment
+  OLLAMA_BASE_URL: http://host.docker.internal:11434
+  OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2:3b}
+  OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+
+services:
+  model-init:
+    <<: *chatdoc-image
+    environment: *host-environment
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["python", "scripts/download_models.py"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  app:
+    <<: *chatdoc-image
+    environment: *host-environment
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      model-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${CHATDOC_PORT:-8502}:8501"
+    restart: unless-stopped

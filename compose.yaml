@@ -1,0 +1,52 @@
+x-chatdoc-image: &chatdoc-image
+  image: chatdoc:local
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-model-environment: &model-environment
+  # The host's localhost URL in .env cannot reach Ollama inside this stack.
+  OLLAMA_BASE_URL: http://ollama:11434
+  OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2:3b}
+  OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+
+services:
+  ollama:
+    image: ollama/ollama:0.35.1
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+
+  model-init:
+    <<: *chatdoc-image
+    environment: *model-environment
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command: ["python", "scripts/download_models.py"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  app:
+    <<: *chatdoc-image
+    environment: *model-environment
+    depends_on:
+      ollama:
+        condition: service_healthy
+      model-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${CHATDOC_PORT:-8502}:8501"
+    restart: unless-stopped
+
+volumes:
+  ollama-data:

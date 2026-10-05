@@ -1,0 +1,10 @@
+# Optional NVIDIA GPU access. Requires working Docker GPU support on the host.
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

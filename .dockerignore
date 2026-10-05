@@ -1,0 +1,19 @@
+# Allowlist: local environments, model binaries, credentials, uploaded files and
+# the assignment PDF must not enter the build context or image.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!src/**
+src/**/__pycache__/
+!scripts/
+!scripts/download_models.py
+!scripts/verify_setup.py
+!test/
+!test/test_batch.py
+!test/test.pdf
+!test/test2.pdf
+!test/test.txt
